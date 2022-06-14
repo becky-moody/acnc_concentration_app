@@ -1,0 +1,13 @@
+name: Concentrations
+title: Concentrations
+username:
+account: beckymoody
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 6406649
+bundleId: 6007596
+url: https://beckymoody.shinyapps.io/Concentrations/
+when: 1655232002.69479
+lastSyncTime: 1655232002.6948
+asMultiple: FALSE
+asStatic: FALSE

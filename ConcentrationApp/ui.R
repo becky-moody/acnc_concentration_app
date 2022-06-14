@@ -1,20 +1,16 @@
-#
-# This is the user-interface definition of a Shiny web application. You can
-# run the application by clicking 'Run App' above.
-#
-# Find out more about building applications with Shiny here:
-#
-#    http://shiny.rstudio.com/
-#
+# User interface for
+#############################-
+## Concentration App ##
+#############################-
+## need special file with dna concentrations
 
 if (!require("pacman")) {
  install.packages("pacman") }
 library(pacman)
 
-#pacman::p_load(shiny, tidyverse, here, janitor, shinyjs, readxl, rhandsontable, update = FALSE)
+#pacman::p_load(shiny, tidyverse,here, janitor, shinyjs, readxl, DT, update = FALSE)
 #pacman::p_unload(here, janitor, readxl)
 library(shiny)
-#library(shinyWidgets)
 library(tidyverse)
 library(here)
 library(janitor)
@@ -29,6 +25,7 @@ shinyUI(fluidPage(
     sidebarPanel(
       useShinyjs(),
 
+      ## change this from only xlsx eventually; not sure what the files usually are
         fileInput("c_file", h3("Choose concentration file"),
                             accept = c(
                               # "text/csv",
@@ -37,17 +34,20 @@ shinyUI(fluidPage(
                               '.xlsx')
         ),
 
+      ## line
       tags$hr(style="border-color: black;"),
+      ## sample id table - editable
       div(
         style = "width: 300px; margin: 10px;",
-
       DTOutput('sample_id_df'),
       br(),
       textOutput('sample_id_note')
       #checkboxInput("run_sample_ids", label = "Upload sample names?", value = FALSE)
     ),
 
+    ## line
     tags$hr(style="border-color: black;"),
+    ## options
     div(style = "lightblue;margin: auto;",
         fluidRow(
           numericInput("start_vol", label = ("Starting Volume?"), value = 30),
@@ -57,25 +57,25 @@ shinyUI(fluidPage(
         textOutput('vol_warning')),
     br(),
 
-tags$hr(style="border-color: black;"),
-
+    ## line
+    tags$hr(style="border-color: black;"),
+    ## calc button
     actionButton(
       inputId = "calculate",
       label = "Calculate?", width = '90%'),
     br(),
     br(),
 
-
-
-      # Button to download data as csv
-      shinyjs::hidden(p(id = "dl",
-          br(),
-          downloadButton("download_data", "Download as csv?")
-      ))
+    # Button to download data as csv
+    shinyjs::hidden(p(id = "dl",
+        br(),
+        downloadButton("download_data", "Download as csv?")
+    ))
 
 
 
     ),
+    ## actual table output
     mainPanel(
       dataTableOutput("contents")
     )
