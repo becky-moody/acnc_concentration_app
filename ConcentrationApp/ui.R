@@ -22,7 +22,7 @@ library(DT)
 # Define UI for application that draws a histogram
 shinyUI(fluidPage(
   sidebarLayout(
-    sidebarPanel(
+    sidebarPanel(width = 3,
       useShinyjs(),
 
       ## change this from only xlsx eventually; not sure what the files usually are
@@ -51,8 +51,8 @@ shinyUI(fluidPage(
     div(style = "lightblue;margin: auto;",
         fluidRow(
           numericInput("start_vol", label = ("Starting Volume?"), value = 30),
-          numericInput("final_conc", label = ("Final Concentration Needed?"), value = 20),
-          numericInput("final_vol", label = ("Final Volume Needed?"), value = 100)
+          numericInput("final_conc", label = ("Final Concentration Desired?"), value = 20),
+          numericInput("final_vol", label = ("Final Volume Desired?"), value = 100)
         ),
         textOutput('vol_warning')),
     br(),
@@ -76,7 +76,7 @@ shinyUI(fluidPage(
 
     ),
     ## actual table output
-    mainPanel(
+    mainPanel(width = 9,
       dataTableOutput("contents")
     )
   )

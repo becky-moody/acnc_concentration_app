@@ -48,7 +48,7 @@ shinyServer(function(input, output) {
   output$sample_id_note <- renderText('Note: will have to recalulate if any changes to sample ids.')
 
   ## text to show under final volume input
-  output$vol_warning <- renderText('Note: Final volume might change if the dna volume is not large enough.')
+  output$vol_warning <- renderText('Note: Final volume might change if the required volume from stock is larger than what is available.')
 
   ## file upload and read the file;
   ## currently on xlsx; will probably need to change this
@@ -62,7 +62,7 @@ shinyServer(function(input, output) {
   })
 
   ## get the data out of the file; only a certain area
-  plate <- eventReactive(input$calculate > 0,{
+  plate <- eventReactive(input$calculate,{
     req(input$c_file)
     df <- df()
     # only want columns 1,2,3; rename
@@ -85,7 +85,7 @@ shinyServer(function(input, output) {
     })
 
 
-  calc_df <- eventReactive(input$calculate > 0,{
+  calc_df <- eventReactive(input$calculate,{
     ## requre the file uplaod and options
     req(input$c_file)
     req(input$start_vol)
@@ -112,6 +112,12 @@ shinyServer(function(input, output) {
       if(is.na(dna_conc)){
         return(data.frame(dna_need = NA, total_dna = NA, water_need = NA,
                           final_vol = NA, final_conc= NA, note = NA))
+      } else if(final_conc > dna_conc){
+        ## can't dilute to a larger concentration obviously
+        ## this outputs negative water; might change to NAs too
+        return(data.frame(dna_need = NA, total_dna = NA, water_need = NA,
+                          final_vol = NA, final_conc = final_conc,
+                          note = 'dilution must be less than stock concentration'))
       } else {
         #   ## formula c1*v1 = c2*v2
         #   calc_vol <- final_vol
@@ -143,29 +149,45 @@ shinyServer(function(input, output) {
             # if still too large then there's not enough dna
             if(dna_need > dna_conc){
               return(data.frame(dna_need = NA, total_dna = NA, water_need = NA,
-                                final_vol = NA, final_conc = NA, note = 'not enough dna'))
+                                final_vol = NA, final_conc = NA, note = 'dilution must be less than stock concentration'))
             }
           }
         }
       }
-      ## can't dilute to a larger concentration obviously
-      ## this outputs negative water; might change to NAs too
-      if(final_conc > dna_conc){
-        return(data.frame(dna_need = dna_need, total_dna = total_dna, water_need = water_need,
-                          final_vol = calc_vol, final_conc = final_conc,
-                          note = 'dilution must be less than start concentration'))
-      }
-      return(data.frame(dna_need = dna_need, total_dna = total_dna,
-                        water_need = water_need,
-                        final_vol = calc_vol, final_conc = final_conc, note = NA))
-    }
+
+        return(data.frame(dna_need = dna_need, total_dna = total_dna,
+                                              water_need = water_need,
+                                              final_vol = calc_vol, final_conc = final_conc, note = NA))
+}
+
+    #   ## can't dilute to a larger concentration obviously
+    #   ## this outputs negative water; might change to NAs too
+    #   if(final_conc > dna_conc){
+    #     return(data.frame(dna_need = dna_need, total_dna = total_dna, water_need = water_need,
+    #                       final_vol = calc_vol, final_conc = final_conc,
+    #                       note = 'dilution must be less than start concentration'))
+    #   }
+    #   return(data.frame(dna_need = dna_need, total_dna = total_dna,
+    #                     water_need = water_need,
+    #                     final_vol = calc_vol, final_conc = final_conc, note = NA))
+    # }
+    f_start_vol <- eventReactive(input$start_vol,{
+      input$start_vol
+    })
+    f_final_conc <- eventReactive(input$final_conc,{
+      input$final_conc
+    })
+    f_final_vol <- eventReactive(input$final_vol,{
+      input$final_vol
+    })
 
 
     df10_c <- df10 %>%
       ## map function to each row of pivoted table
       mutate(purrr::pmap_dfr(list(dna_conc = df10$dna_concentration,
-                                  final_conc = input$final_conc,
-                                  final_vol = input$final_vol),
+                                  final_conc = f_final_conc(),#input$final_conc,
+                                  final_vol = f_final_vol(),#input$final_vol,
+                                  start_vol = f_start_vol()),#input$start_vol),
                              weight.calc)) %>%
       ## force rounding to 2 decimal places
       mutate(across(where(is.numeric), round, 2)) %>%
@@ -192,9 +214,13 @@ shinyServer(function(input, output) {
     ## join with the calculated table; order columns
     out_df <- df10_c %>%
       left_join(., samples, by = c('r','name','samp_space')) %>%
-      select(sample_id, r, name, dna_concentration,
-             dna_need, total_dna, water_need, final_vol,
-             final_conc, note)
+      select(sample_id, r, name,
+             stock_dna_concentration = dna_concentration,
+             total_dna,
+             volume_from_stock = dna_need,
+             water_volume = water_need,
+             final_volume = final_vol,
+             final_concentration = final_conc, note)
 
     cat('finished with calculations.\n')
 
@@ -210,7 +236,8 @@ shinyServer(function(input, output) {
   ## rendering the calculated table; not allowing edits of this
   output$contents <- DT::renderDT({
     DT::datatable(calc_df(), options= list(dom = 't',pageLength = 20),
-                  editable = FALSE, class = 'cell-border stripe',)
+                  editable = FALSE, class = 'cell-border stripe',
+                  rownames = FALSE, selection = 'single')
   })#, editable = TRUE)
 
 
